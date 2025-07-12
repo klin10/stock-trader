@@ -11,6 +11,7 @@ websockets
 pandas
 numpy
 ta-lib
+scikit-learn
 
 # Others
 python-dotenv

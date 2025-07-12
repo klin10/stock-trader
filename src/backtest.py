@@ -33,11 +33,43 @@ def backtest_strategy(strategy, ticker):
     }
 
 
+from src.strategy import MultiIndicatorStrategy
+from src.ml_strategy import MLStrategy, train_model
+
+def compare_strategies(strategies, tickers):
+    results = []
+    for ticker in tickers:
+        print(f"\n--- {ticker} ---")
+        for strategy in strategies:
+            if isinstance(strategy, MLStrategy):
+                model = train_model(ticker)
+                if model:
+                    strategy.model = model
+                else:
+                    continue
+
+            performance = backtest_strategy(strategy, ticker)
+            results.append({
+                'ticker': ticker,
+                'strategy': strategy.name,
+                'total_return': performance['total_return'],
+                'sharpe_ratio': performance['sharpe_ratio'],
+                'num_trades': performance['num_trades']
+            })
+
+    results_df = pd.DataFrame(results)
+    print("\n--- Strategy Comparison ---")
+    print(results_df)
+
+
 if __name__ == '__main__':
     # Example usage
-    # mac = MovingAverageCrossover(short_window=10, long_window=50)
-    # performance = backtest_strategy(mac, 'AAPL')
-    # print(f"Total Return: {performance['total_return']:.2%}")
-    # print(f"Sharpe Ratio: {performance['sharpe_ratio']:.2f}")
-    # print(f"Number of Trades: {performance['num_trades']}")
+    mac = MovingAverageCrossover(short_window=10, long_window=50)
+    mis = MultiIndicatorStrategy()
+    mls = MLStrategy(None) # Model will be trained in compare_strategies
+
+    strategies_to_compare = [mac, mis, mls]
+    tickers_to_compare = ['AAPL', 'GOOG'] # Add more tickers as needed
+
+    # compare_strategies(strategies_to_compare, tickers_to_compare)
     pass
