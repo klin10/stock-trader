@@ -1,0 +1,17 @@
+# Charles Schwab API
+schwab-api
+
+# Database
+sqlalchemy
+psycopg2-binary
+
+# Websocket
+websockets
+
+# Data Analysis
+pandas
+numpy
+ta-lib
+
+# Others
+python-dotenv
