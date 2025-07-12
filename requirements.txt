@@ -15,3 +15,5 @@ scikit-learn
 
 # Others
 python-dotenv
+gym
+tensorflow
