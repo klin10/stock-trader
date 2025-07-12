@@ -3,7 +3,6 @@ schwab-api
 
 # Database
 sqlalchemy
-psycopg2-binary
 
 # Websocket
 websockets
