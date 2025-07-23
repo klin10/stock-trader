@@ -1,5 +1,4 @@
 import pandas as pd
-import talib
 from src.strategy import Strategy
 
 class MeanReversionStrategy(Strategy):
@@ -13,7 +12,9 @@ class MeanReversionStrategy(Strategy):
         signals['signal'] = 0.0
 
         # Calculate Bollinger Bands
-        df['upper_band'], df['middle_band'], df['lower_band'] = talib.BBANDS(df['close'], timeperiod=self.window, nbdevup=self.std_dev, nbdevdn=self.std_dev)
+        df['middle_band'] = df['close'].rolling(window=self.window).mean()
+        df['upper_band'] = df['middle_band'] + self.std_dev * df['close'].rolling(window=self.window).std()
+        df['lower_band'] = df['middle_band'] - self.std_dev * df['close'].rolling(window=self.window).std()
 
         # Buy signal: price touches the lower band
         signals.loc[df['close'] < df['lower_band'], 'signal'] = 1.0

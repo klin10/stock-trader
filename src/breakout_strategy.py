@@ -1,5 +1,4 @@
 import pandas as pd
-import talib
 from src.strategy import Strategy
 
 class BreakoutStrategy(Strategy):
@@ -13,7 +12,10 @@ class BreakoutStrategy(Strategy):
         signals['signal'] = 0.0
 
         # Calculate Bollinger Bands
-        df['upper_band'], df['middle_band'], df['lower_band'] = talib.BBANDS(df['close'], timeperiod=self.consolidation_window)
+        df['middle_band'] = df['close'].rolling(window=self.consolidation_window).mean()
+        df['upper_band'] = df['middle_band'] + 2 * df['close'].rolling(window=self.consolidation_window).std()
+        df['lower_band'] = df['middle_band'] - 2 * df['close'].rolling(window=self.consolidation_window).std()
+
 
         # Calculate average volume
         df['avg_volume'] = df['volume'].rolling(window=self.consolidation_window).mean()

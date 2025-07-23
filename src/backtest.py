@@ -1,10 +1,10 @@
 import pandas as pd
 import numpy as np
-from src.strategy import MovingAverageCrossover, get_data
+from src.strategy import MovingAverageCrossover
+from src.data_loader import get_data
 
-def backtest_strategy(strategy, ticker):
-    df = get_data(ticker)
-    signals = strategy.generate_signals(df)
+def backtest_strategy(strategy, df, commission_rate=0.001, annualizing_factor=252):
+    signals = strategy.generate_signals(df.copy())
 
     # Combine signals with the original dataframe
     df = df.join(signals, how='inner')
@@ -15,12 +15,16 @@ def backtest_strategy(strategy, ticker):
     # Calculate strategy returns
     df['strategy_returns'] = df['returns'] * df['signal'].shift(1)
 
+    # Apply commissions
+    trades = df['positions'].abs()
+    df['strategy_returns'] -= trades * commission_rate
+
     # Calculate cumulative returns
     df['cumulative_returns'] = (1 + df['strategy_returns']).cumprod()
 
     # Calculate performance metrics
     total_return = df['cumulative_returns'].iloc[-1] - 1
-    sharpe_ratio = np.sqrt(252) * (df['strategy_returns'].mean() / df['strategy_returns'].std()) # Annualized
+    sharpe_ratio = np.sqrt(annualizing_factor) * (df['strategy_returns'].mean() / df['strategy_returns'].std()) # Annualized
 
     # Get number of trades
     num_trades = len(df[df['positions'] != 0])
@@ -34,21 +38,18 @@ def backtest_strategy(strategy, ticker):
 
 
 from src.strategy import MultiIndicatorStrategy
-from src.ml_strategy import MLStrategy, train_model
+from src.ml_strategy import MLStrategy
 
-def compare_strategies(strategies, tickers):
+def compare_strategies(strategies, tickers, commission_rate=0.001, annualizing_factor=252):
     results = []
     for ticker in tickers:
         print(f"\n--- {ticker} ---")
+        df = get_data(ticker)
+        if df.empty:
+            print(f"Could not get data for {ticker}")
+            continue
         for strategy in strategies:
-            if isinstance(strategy, MLStrategy):
-                model = train_model(ticker)
-                if model:
-                    strategy.model = model
-                else:
-                    continue
-
-            performance = backtest_strategy(strategy, ticker)
+            performance = backtest_strategy(strategy, df, commission_rate, annualizing_factor)
             results.append({
                 'ticker': ticker,
                 'strategy': strategy.name,
@@ -57,9 +58,13 @@ def compare_strategies(strategies, tickers):
                 'num_trades': performance['num_trades']
             })
 
+
+
+
     results_df = pd.DataFrame(results)
     print("\n--- Strategy Comparison ---")
     print(results_df)
+
 
 
 from src.momentum_strategy import MomentumStrategy
@@ -73,7 +78,7 @@ if __name__ == '__main__':
     # Example usage
     mac = MovingAverageCrossover(short_window=10, long_window=50)
     mis = MultiIndicatorStrategy()
-    mls = MLStrategy(None) # Model will be trained in compare_strategies
+    mls = MLStrategy()
     mom = MomentumStrategy()
     brk = BreakoutStrategy()
     tfs = TrendFollowingStrategy()
@@ -85,5 +90,5 @@ if __name__ == '__main__':
     strategies_to_compare = [mac, mis, mls, mom, brk, tfs, nts, scl, mrs]
     tickers_to_compare = ['AAPL', 'GOOG'] # Add more tickers as needed
 
-    # compare_strategies(strategies_to_compare, tickers_to_compare)
+    compare_strategies(strategies_to_compare, tickers_to_compare)
     pass
